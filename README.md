@@ -1,94 +1,94 @@
 # Movie Review Classifier
 
-Clasificador binario de sentimiento (positivo/negativo) para reseñas de películas, construido haciendo *fine-tuning* de **DistilBERT** sobre el dataset **IMDB** con la librería 🤗 Transformers.
+Binary sentiment classifier (positive/negative) for movie reviews, built by *fine-tuning* **DistilBERT** on the **IMDB** dataset with the 🤗 Transformers library.
 
-## Descripción
+## Description
 
-El proyecto toma el modelo preentrenado `distilbert-base-uncased` y le agrega una cabeza de clasificación de secuencias (`AutoModelForSequenceClassification`, `num_labels=2`) para predecir si una reseña de película es positiva (`1`) o negativa (`0`).
+The project takes the pretrained `distilbert-base-uncased` model and adds a sequence classification head (`AutoModelForSequenceClassification`, `num_labels=2`) to predict whether a movie review is positive (`1`) or negative (`0`).
 
-Todo el flujo de trabajo —carga de datos, tokenización, entrenamiento y evaluación— está implementado en un único notebook: [movie_review_classifier.ipynb](movie_review_classifier.ipynb).
+The whole workflow —data loading, tokenization, training, and evaluation— is implemented in a single notebook: [movie_review_classifier.ipynb](movie_review_classifier.ipynb).
 
 ## Dataset
 
-Se utiliza el dataset [`stanfordnlp/imdb`](https://huggingface.co/datasets/stanfordnlp/imdb) de Hugging Face:
+The [`stanfordnlp/imdb`](https://huggingface.co/datasets/stanfordnlp/imdb) dataset from Hugging Face is used:
 
-| Split          | Ejemplos |
+| Split          | Examples |
 |----------------|---------:|
-| `train`        |   25.000 |
-| `test`         |   25.000 |
-| `unsupervised` |   50.000 |
+| `train`        |   25,000 |
+| `test`         |   25,000 |
+| `unsupervised` |   50,000 |
 
-Cada ejemplo tiene un campo `text` (la reseña) y un campo `label` (`0` = negativa, `1` = positiva).
+Each example has a `text` field (the review) and a `label` field (`0` = negative, `1` = positive).
 
-## Modelo y pipeline
+## Model and pipeline
 
-1. **Tokenización**: `AutoTokenizer` de `distilbert-base-uncased`, con `padding='max_length'`, `truncation=True` y `max_length=256`.
-2. **Modelo**: `distilbert-base-uncased` + cabeza de clasificación (`classifier`, `pre_classifier`) inicializada desde cero para la tarea de 2 clases.
-3. **Métrica**: *accuracy*, calculada con la librería `evaluate`.
-4. **Entrenamiento**: se usa `Trainer` / `TrainingArguments` de Transformers en dos etapas:
-   - Una corrida rápida sobre un subconjunto (1.000 ejemplos de train / 500 de eval) para validar que el pipeline funciona end-to-end (2 épocas, `learning_rate=2e-5`, `batch_size=16`).
-   - Una corrida sobre el dataset completo (25.000 train / 25.000 test, 3 épocas) con los mismos hiperparámetros.
+1. **Tokenization**: `AutoTokenizer` from `distilbert-base-uncased`, with `padding='max_length'`, `truncation=True`, and `max_length=256`.
+2. **Model**: `distilbert-base-uncased` + classification head (`classifier`, `pre_classifier`) initialized from scratch for the 2-class task.
+3. **Metric**: *accuracy*, computed with the `evaluate` library.
+4. **Training**: `Trainer` / `TrainingArguments` from Transformers is used in two stages:
+   - A quick run on a subset (1,000 train / 500 eval examples) to validate that the pipeline works end-to-end (2 epochs, `learning_rate=2e-5`, `batch_size=16`).
+   - A run on the full dataset (25,000 train / 25,000 test, 3 epochs) with the same hyperparameters.
 
-### Resultado de la corrida de validación
+### Validation run result
 
-Con el subconjunto reducido (1.000/500 ejemplos, 2 épocas) se obtuvo:
+With the reduced subset (1,000/500 examples, 2 epochs) the following was obtained:
 
 - `training_loss`: **0.463**
 - `train_runtime`: ~70.6s
 - `train_samples_per_second`: ~28.3
 
-> Nota: el entrenamiento sobre el dataset completo (celda final del notebook) está implementado pero el notebook actual no incluye las métricas finales de esa corrida ni el guardado del modelo entrenado — ver [Estado actual y próximos pasos](#estado-actual-y-próximos-pasos).
+> Note: training on the full dataset (final cell of the notebook) is implemented, but the current notebook does not include the final metrics for that run nor does it save the trained model — see [Current status and next steps](#current-status-and-next-steps).
 
-## Requisitos
+## Requirements
 
 - Python 3.9+
-- Jupyter (Notebook o Lab)
-- Dependencias instaladas desde la primera celda del notebook:
+- Jupyter (Notebook or Lab)
+- Dependencies installed from the first cell of the notebook:
 
 ```bash
 pip install transformers datasets evaluate accelerate
 ```
 
-Se recomienda además tener PyTorch instalado (requerido por `transformers`) y, si se dispone de GPU, los drivers/CUDA correspondientes para acelerar el entrenamiento.
+It is also recommended to have PyTorch installed (required by `transformers`) and, if a GPU is available, the corresponding drivers/CUDA to speed up training.
 
-## Uso
+## Usage
 
-1. Cloná el repositorio e instalá las dependencias:
+1. Clone the repository and install the dependencies:
 
    ```bash
    pip install transformers datasets evaluate accelerate jupyter
    ```
 
-2. Abrí el notebook:
+2. Open the notebook:
 
    ```bash
    jupyter notebook movie_review_classifier.ipynb
    ```
 
-3. Ejecutá las celdas en orden. La primera corrida (dataset descargará ~25MB vía `datasets` y el checkpoint de `distilbert-base-uncased`, ~268MB) puede tardar unos minutos según la conexión.
+3. Run the cells in order. The first run (the dataset will download ~25MB via `datasets` and the `distilbert-base-uncased` checkpoint, ~268MB) may take a few minutes depending on your connection.
 
-4. Ajustá los hiperparámetros en `TrainingArguments` (épocas, batch size, learning rate) según el hardware disponible. El entrenamiento sobre el dataset completo es significativamente más pesado que la corrida de validación sobre el subconjunto chico.
+4. Adjust the hyperparameters in `TrainingArguments` (epochs, batch size, learning rate) according to the available hardware. Training on the full dataset is significantly heavier than the validation run on the small subset.
 
-## Estructura del proyecto
+## Project structure
 
 ```
 movie-review-classifier/
 ├── README.md
-└── movie_review_classifier.ipynb   # Pipeline completo: datos, tokenización, entrenamiento y evaluación
+└── movie_review_classifier.ipynb   # Full pipeline: data, tokenization, training, and evaluation
 ```
 
-## Estado actual y próximos pasos
+## Current status and next steps
 
-Este es un proyecto en desarrollo. Pendientes identificados en el notebook actual:
+This is a work-in-progress project. Identified pending items in the current notebook:
 
-- [ ] Registrar y reportar las métricas finales (`accuracy`, `loss`) de la corrida sobre el dataset completo.
-- [ ] Guardar el modelo y tokenizer entrenados (`trainer.save_model()` / `tokenizer.save_pretrained()`) para poder reutilizarlos sin reentrenar.
-- [ ] Agregar un script o celda de inferencia para clasificar reseñas nuevas (por ejemplo con `pipeline("text-classification", ...)`).
-- [ ] Congelar las dependencias en un `requirements.txt` o `pyproject.toml` para reproducibilidad.
-- [ ] Evaluar el modelo final sobre el split `test` completo y reportar matriz de confusión / métricas adicionales (precision, recall, F1).
+- [ ] Record and report the final metrics (`accuracy`, `loss`) for the run on the full dataset.
+- [ ] Save the trained model and tokenizer (`trainer.save_model()` / `tokenizer.save_pretrained()`) to be able to reuse them without retraining.
+- [ ] Add an inference script or cell to classify new reviews (e.g. with `pipeline("text-classification", ...)`).
+- [ ] Pin dependencies in a `requirements.txt` or `pyproject.toml` for reproducibility.
+- [ ] Evaluate the final model on the full `test` split and report a confusion matrix / additional metrics (precision, recall, F1).
 
-## Créditos
+## Credits
 
 - Dataset: [IMDB Large Movie Review Dataset](https://huggingface.co/datasets/stanfordnlp/imdb) (Maas et al., 2011).
-- Modelo base: [`distilbert-base-uncased`](https://huggingface.co/distilbert-base-uncased) (Sanh et al., 2019).
-- Librerías: [🤗 Transformers](https://github.com/huggingface/transformers), [🤗 Datasets](https://github.com/huggingface/datasets), [🤗 Evaluate](https://github.com/huggingface/evaluate).
+- Base model: [`distilbert-base-uncased`](https://huggingface.co/distilbert-base-uncased) (Sanh et al., 2019).
+- Libraries: [🤗 Transformers](https://github.com/huggingface/transformers), [🤗 Datasets](https://github.com/huggingface/datasets), [🤗 Evaluate](https://github.com/huggingface/evaluate).
